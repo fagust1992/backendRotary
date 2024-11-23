@@ -26,6 +26,7 @@ connection();
 
 // Parsear el cuerpo de las solicitudes a JSON
 app.use(express.json());
+// por aqui traer fileupload
 app.use(express.urlencoded({ extended: true }));
 
 // Cargar rutas

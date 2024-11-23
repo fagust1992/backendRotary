@@ -4,6 +4,10 @@ const User = require("../models/user");
 const jwt = require("../services/jwt");
 const fs = require("fs");
 const path = require("path");
+const cloudinary = require('cloudinary').v2;
+const dotenv = require("dotenv");
+dotenv.config();
+
 
 const pruebaUser = (req, res) => {
   return res.status(200).send({
@@ -252,7 +256,14 @@ const update = async (req, res) => {
   }
 };
 //subir imagen
+// Subir imagen a Cloudinary
 const upload = async (req, res) => {
+    // Configuration
+    cloudinary.config({ 
+      cloud_name: process.env.cloud_name, 
+      api_key: process.env.api_key, 
+      api_secret: process.env.api_secret
+  });
   try {
     if (!req.file) {
       return res.status(404).send({
@@ -261,13 +272,12 @@ const upload = async (req, res) => {
       });
     }
 
-    const imageName = req.file.filename;
     const extension = req.file.originalname.split(".").pop().toLowerCase();
-
+    
     if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
       const filepath = req.file.path;
       try {
-        fs.unlinkSync(filepath);
+        fs.unlinkSync(filepath); // Elimina el archivo local si no es válido
       } catch (error) {
         console.error("Error al eliminar el archivo:", error);
       }
@@ -278,9 +288,20 @@ const upload = async (req, res) => {
       });
     }
 
+    // Subir la imagen a Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: 'avatars', // Puedes especificar una carpeta en Cloudinary
+      use_filename: true, // Usar el nombre original del archivo
+      unique_filename: false, // No cambiar el nombre del archivo
+    });
+
+    // Eliminar el archivo local después de subirlo a Cloudinary
+    fs.unlinkSync(req.file.path);
+
+    // Actualizar el avatar del usuario en la base de datos con el URL de Cloudinary
     const userUpdate = await User.findByIdAndUpdate(
       req.user.id,
-      { image: imageName },
+      { image: result.secure_url }, // Guardar la URL de la imagen en Cloudinary
       { new: true }
     );
 
@@ -308,21 +329,33 @@ const upload = async (req, res) => {
 
 const avatar = (req, res) => {
   const file = req.params.file;
-  //Montar el path real de la imagen
-  const filePath = "./uploads/avatars/" + file;
-  // comprobar quer existe
-  fs.stat(filePath, (err, exists) => {
-    if (!exists) {
-      return res.status(404).send({
-        status: "error",
-        message: "no existe la imagen",
-      });
-    }
+  
+  // Usar la URL de Cloudinary para obtener la imagen
+  const imageUrl = `https://res.cloudinary.com/didnj5xfr/image/upload/avatars/${file}`;
 
-    //devolver  un file
-    return res.sendFile(path.resolve(filePath));
-  });
+  // Comprobar si la URL de la imagen es válida
+  fetch(imageUrl)
+    .then(response => {
+      if (!response.ok) {
+        return res.status(404).send({
+          status: "error",
+          message: "La imagen no existe en Cloudinary",
+        });
+      }
+      return res.status(200).send({
+        status: "success",
+        message: "Imagen encontrada",
+        url: imageUrl,
+      });
+    })
+    .catch((err) => {
+      return res.status(500).send({
+        status: "error",
+        message: "Error al obtener la imagen",
+      });
+    });
 };
+
 
 //Delete Publication/Eliminar publicacion
 const delete_user = async (req, res) => {
