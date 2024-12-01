@@ -258,11 +258,11 @@ const update = async (req, res) => {
 //subir imagen
 // Subir imagen a Cloudinary
 const upload = async (req, res) => {
-    // Configuration
-    cloudinary.config({ 
-      cloud_name: process.env.cloud_name, 
-      api_key: process.env.api_key, 
-      api_secret: process.env.api_secret
+  // Configuration
+  cloudinary.config({
+    cloud_name: process.env.cloud_name,
+    api_key: process.env.api_key,
+    api_secret: process.env.api_secret
   });
   try {
     if (!req.file) {
@@ -273,7 +273,7 @@ const upload = async (req, res) => {
     }
 
     const extension = req.file.originalname.split(".").pop().toLowerCase();
-    
+
     if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
       const filepath = req.file.path;
       try {
@@ -329,7 +329,7 @@ const upload = async (req, res) => {
 
 const avatar = (req, res) => {
   const file = req.params.file;
-  
+
   // Usar la URL de Cloudinary para obtener la imagen
   const imageUrl = `https://res.cloudinary.com/didnj5xfr/image/upload/avatars/${file}`;
 
@@ -403,7 +403,7 @@ const getAllUsers = async (req, res) => {
   try {
     // Consultar todos los usuarios
     const users = await User.find({});
-    
+
     // Devolver resultado exitoso
     return res.status(200).json({
       status: "success",
