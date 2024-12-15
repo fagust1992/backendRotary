@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require('path');
 const Publication = require("../models/publication");
+const cloudinary = require("cloudinary").v2;
 
 // acciones de prueba
 const pruebaPublication = (req, res) => {
@@ -165,14 +166,12 @@ const user = async (req, res) => {
     });
   }
 };
-// Subir ficheros
+// subir imagen
 const upload = async (req, res) => {
   try {
-    // Sacar publication id
     const publicationId = req.params.id;
     console.log("Publication ID:", publicationId);
 
-    // Recoger el fichero de imagen y comprobar que existe
     if (!req.file) {
       return res.status(404).send({
         status: "error",
@@ -180,55 +179,59 @@ const upload = async (req, res) => {
       });
     }
 
-    // Conseguir el nombre del archivo
-    let image = req.file.originalname;
+    const image = req.file.originalname;
     console.log(image);
 
-    // Sacar la extensión del archivo
+    // Extraemos la extensión del archivo
     const imageSplit = image.split(".");
-    console.log(imageSplit);
     const extension = imageSplit[imageSplit.length - 1];
 
-
-    // Comprobar extensión
-    if (
-      extension != "png" &&
-      extension != "jpg" &&
-      extension != "jpeg" &&
-      extension != "gif"
-    ) {
-      // Borrar archivo subido
+    // Comprobar que la extensión del archivo es válida
+    if (!["png", "jpg", "jpeg", "gif"].includes(extension)) {
       const filePath = req.file.path;
-      fs.unlinkSync(filePath); // No necesitamos guardar el resultado de fs.unlinkSync
+      fs.unlinkSync(filePath); // Eliminar el archivo local si la extensión es inválida
 
-      // Devolver respuesta negativa
       return res.status(400).send({
         status: "error",
-        message: "Extensión del fichero invalida",
+        message: "Extensión del fichero inválida",
       });
     }
 
-    // Si es correcta, guardar imagen en bbdd
+    // Configuración de Cloudinary
+    cloudinary.config({
+      cloud_name: process.env.cloud_name,
+      api_key: process.env.api_key,
+      api_secret: process.env.api_secret
+    });
+
+    // Subir la imagen a Cloudinary
+    const result = await cloudinary.uploader.upload(req.file.path, {
+      folder: "publications", // Usa una carpeta específica para publicaciones
+      use_filename: true,
+      unique_filename: false,
+    });
+
+    // Eliminar el archivo local después de subirlo
+    fs.unlinkSync(req.file.path);
+
+    // Actualizar la publicación con la URL de la imagen
     const publicationUpdated = await Publication.findOneAndUpdate(
       { user: req.user.id, _id: publicationId },
-      { file: req.file.filename },
+      { file: result.secure_url }, // Guardamos la URL de Cloudinary
       { new: true }
     );
-
-    console.log("Publicación actualizada:", publicationUpdated);
 
     if (!publicationUpdated) {
       return res.status(500).send({
         status: "error",
-        message: "Error en la subida del avatar",
+        message: "Error en la subida de la publicación",
       });
     }
 
-    // Devolver respuesta
     return res.status(200).send({
       status: "success",
       publication: publicationUpdated,
-      file: req.file,
+      file: result.secure_url, // Retornamos la URL de la imagen subida
     });
   } catch (error) {
     console.error("Error:", error);
@@ -239,23 +242,39 @@ const upload = async (req, res) => {
     });
   }
 };
+
 const media = (req, res) => {
   const file = req.params.file;
-  // Montar el path real de la imagen
-  const filePath = path.join(__dirname, '../uploads/publications/', file);
-  // Comprobar que existe
-  fs.stat(filePath, (err, stats) => {
-    if (err || !stats) {
-      return res.status(404).send({
-        status: "error",
-        message: "No existe la imagen",
-      });
-    }
 
-    // Devolver un file
-    return res.sendFile(path.resolve(filePath));
-  });
+  // Construir la URL de la imagen en Cloudinary
+  const imageUrl = `https://res.cloudinary.com/${process.env.cloud_name}/image/upload/publications/${file}`;
+
+  // Verificar que la imagen existe en Cloudinary
+  fetch(imageUrl)
+    .then(response => {
+      if (!response.ok) {
+        return res.status(404).send({
+          status: "error",
+          message: "La imagen no existe en Cloudinary",
+        });
+      }
+
+      // Responder con la URL de la imagen
+      return res.status(200).send({
+        status: "success",
+        message: "Imagen encontrada",
+        url: imageUrl,
+      });
+    })
+    .catch(err => {
+      console.error("Error al obtener la imagen:", err);
+      return res.status(500).send({
+        status: "error",
+        message: "Error al obtener la imagen",
+      });
+    });
 };
+
 
 const getAllPublications = async (req, res) => {
   try {

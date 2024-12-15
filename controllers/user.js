@@ -290,9 +290,9 @@ const upload = async (req, res) => {
 
     // Subir la imagen a Cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, {
-      folder: 'avatars', // Puedes especificar una carpeta en Cloudinary
-      use_filename: true, // Usar el nombre original del archivo
-      unique_filename: false, // No cambiar el nombre del archivo
+      folder: 'avatars',
+      use_filename: true, 
+      unique_filename: false, 
     });
 
     // Eliminar el archivo local después de subirlo a Cloudinary

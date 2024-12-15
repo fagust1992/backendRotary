@@ -11,6 +11,10 @@ const PublicationSchema = new Schema({
     type: String,
     required: true,
   },
+  image: {
+    type: String,
+    default: "default.png",
+  },
 
 });
 
