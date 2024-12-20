@@ -1,0 +1,107 @@
+
+tu codigo me tira un error y  te copia del mensaje que arroja la consola
+yo creo que es por la imagen no la agregue igual en el modelo de mi backend
+es  no obligatiorio el campo por ende me guardara la publicación corrigelo Debe
+ser eso por que postma me funciona :
+
+ React, { useState } from "react";
+import { Global } from "../../helpers/Global";
+
+const CreatePublication = () => {
+  const [formData, setFormData] = useState({
+    text: "",
+    image: null,
+  });
+  const [message, setMessage] = useState("");
+
+  const handleInputChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData({
+      ...formData,
+      [name]: files ? files[0] : value,
+    });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+
+    const token = localStorage.getItem("token"); // Obtén el token desde localStorage
+    if (!token) {
+      setMessage("Debes iniciar sesión para publicar.");
+      return;
+    }
+
+    const data = new FormData();
+    data.append("text", formData.text);
+    if (formData.image) {
+      data.append("image", formData.image);
+    }
+
+    try {
+      const response = await fetch(`${Global.url}publication/save`, {
+        method: "POST",
+        headers: {
+          Authorization:token, // token
+        },
+        body: data,
+      });
+
+      const result = await response.json();
+      if (result.status === "success") {
+        setMessage("Publicación creada exitosamente.");
+        setFormData({ text: "", image: null }); // Limpiamos el formulario 
+      } else {
+        setMessage(result.message || "Error al crear la publicación.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      setMessage("Error al conectar con el servidor.");
+    }
+  };
+
+  return (
+    <div className="container mt-5">
+      <h2 className="mb-4">Crear Publicación</h2>
+      {message && <p className="alert alert-info">{message}</p>}
+      <form onSubmit={handleFormSubmit}>
+        <div className="mb-3">
+          <label htmlFor="text" className="form-label">
+            Texto de la Publicación
+          </label>
+          <textarea
+            id="text"
+            name="text"
+            className="form-control"
+            rows="3"
+            value={formData.text}
+            onChange={handleInputChange}
+            required
+          ></textarea>
+        </div>
+        <div className="mb-3">
+          <label htmlFor="image" className="form-label">
+            Imagen (opcional)
+          </label>
+          <input
+            type="file"
+            id="image"
+            name="image"
+            className="form-control"
+            accept="image/*"
+            onChange={handleInputChange}
+          />
+        </div>
+        <button type="submit" className="btn btn-primary">
+          Publicar
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default CreatePublication;
+
+
+
+
+

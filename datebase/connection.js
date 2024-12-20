@@ -14,7 +14,9 @@ mongoose.connection.on("error", (err) => {
 
 const connection = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Tiempo límite para seleccionar un servidor (5 segundos)
+    });
     console.log("Conexión establecida correctamente");
   } catch (error) {
     console.error("Error al conectar a la base de datos:", error.message);

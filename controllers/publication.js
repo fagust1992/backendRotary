@@ -201,7 +201,7 @@ const upload = async (req, res) => {
     cloudinary.config({
       cloud_name: process.env.cloud_name,
       api_key: process.env.api_key,
-      api_secret: process.env.api_secret
+      api_secret: process.env.api_secret,
     });
 
     // Subir la imagen a Cloudinary
@@ -217,7 +217,7 @@ const upload = async (req, res) => {
     // Actualizar la publicación con la URL de la imagen
     const publicationUpdated = await Publication.findOneAndUpdate(
       { user: req.user.id, _id: publicationId },
-      { file: result.secure_url }, // Guardamos la URL de Cloudinary
+      { image: result.secure_url }, // Cambiar "file" por "image"
       { new: true }
     );
 
@@ -242,6 +242,7 @@ const upload = async (req, res) => {
     });
   }
 };
+
 
 const media = (req, res) => {
   const file = req.params.file;
@@ -382,3 +383,4 @@ module.exports = {
   getAllPublications,
   updatePublication
 };
+//tengo que  subir 
