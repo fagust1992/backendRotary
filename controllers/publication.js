@@ -123,28 +123,9 @@ const user = async (req, res) => {
     // Sacar el id del usuario
     const userId = req.params.id;
 
-    // Controlar la página
-    let page = 1;
-
-    if (req.params.page) {
-      page = parseInt(req.params.page);
-    }
-
-    const itemsPerPage = 5;
-
-    // Obtener el total de publicaciones del usuario
-    const totalPublications = await Publication.countDocuments({
-      user: userId,
-    });
-
-    // Calcular el número total de páginas
-    const totalPages = Math.ceil(totalPublications / itemsPerPage);
-
-    // Buscar, popular, ordenar y paginar
+    // Obtener todas las publicaciones del usuario
     const publications = await Publication.find({ user: userId })
       .sort("-created_at") // Ordenar por fecha de creación descendente
-      .skip((page - 1) * itemsPerPage) // Saltar los documentos según la página
-      .limit(itemsPerPage) // Limitar los resultados por página
       .exec();
 
     // Devolver respuesta
@@ -153,9 +134,9 @@ const user = async (req, res) => {
       message: "Publicaciones del perfil de Usuario",
       user: req.user,
       publications,
-      totalPublications,
-      totalPages,
-      currentPage: page,
+      totalPublications: publications.length, // Total de publicaciones
+      totalPages: 1, // Solo una página porque no hay paginación
+      currentPage: 1, // Página actual
     });
   } catch (err) {
     // Manejar errores generales
@@ -166,6 +147,7 @@ const user = async (req, res) => {
     });
   }
 };
+
 // subir imagen
 const upload = async (req, res) => {
   try {
@@ -279,38 +261,17 @@ const media = (req, res) => {
 
 const getAllPublications = async (req, res) => {
   try {
-    // Controlar la página
-    let page = 1;
-    if (req.query.page) {
-      page = parseInt(req.query.page);
-    }
+    // Obtén todas las publicaciones sin paginación
+    const publications = await Publication.find().sort("-createdAt");
 
-    const itemsPerPage = 5;
-
-    // Obtener el total de publicaciones
-    const totalPublications = await Publication.countDocuments();
-
-    // Calcular el número total de páginas
-    const totalPages = Math.ceil(totalPublications / itemsPerPage);
-
-    // Buscar, ordenar y paginar
-    const publications = await Publication.find()
-      .sort("-created_at") // Ordenar por fecha de creación descendente
-      .skip((page - 1) * itemsPerPage) // Saltar los documentos según la página
-      .limit(itemsPerPage) // Limitar los resultados por página
-      .exec();
-
-    // Devolver respuesta
     return res.status(200).send({
       status: "success",
       message: "Listado de todas las publicaciones",
       publications,
-      totalPublications,
-      totalPages,
-      currentPage: page,
+      totalPublications: publications.length, // Contar las publicaciones
     });
   } catch (err) {
-    // Manejar errores generales
+    console.error("Error en getAllPublications:", err.message);
     return res.status(500).send({
       status: "error",
       message: "Error al obtener las publicaciones",
@@ -318,6 +279,7 @@ const getAllPublications = async (req, res) => {
     });
   }
 };
+
 
 
 const updatePublication = async (req, res) => {

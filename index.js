@@ -11,11 +11,12 @@ const puerto =process.env.PORT || 3900;
 
 // Configurar CORS
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://rotaryclub-maipu.org',], // Permite solicitudes desde estas URLs
+  origin: ['http://localhost:5173', 'https://rotaryclub-maipu.org'], // Asegúrate de incluir las URL correctas
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
   allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos
-  preflightContinue: false, // Asegura que las solicitudes OPTIONS no se pasen a los siguientes middleware
+  credentials: true, // Permitir credenciales (si usas cookies o tokens en el frontend)
 }));
+
 
 // Permitir solicitudes OPTIONS para todos los endpoints
 app.options('*', cors());
